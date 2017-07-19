@@ -1,0 +1,168 @@
+"use strict";
+
+const readlineSync = require("readline-sync");
+
+global.studentInfo = [];
+
+function buildMainMenuString(){
+    return (`1. 添加学生
+2. 生成成绩单
+3. 退出
+请输入你的选择（1～3）：`);
+}
+
+function buildStudentInfoPromptString(suspendStudentInfo){
+
+    return {
+        rightform:`学生${suspendStudentInfo[0]}的成绩被添加`,
+        wrongform:`请按正确的格式输入（格式：姓名, 学号, 学科: 成绩, ...）：`
+    }
+}
+
+function addStudentInfo(suspendStudentInfo){
+    studentInfo.push({
+        name:suspendStudentInfo[0],
+        studentNumber:suspendStudentInfo[1],
+        nation:suspendStudentInfo[2],
+        klass:suspendStudentInfo[3],
+        grades:new Map()
+    });
+    let sum = 0;
+    for(let i=0;i<4;i++){
+        studentInfo[studentInfo.length-1].grades.set(suspendStudentInfo[i+4].split(':')[0],suspendStudentInfo[i+4].split(':')[1]);
+        sum += parseInt(suspendStudentInfo[i+4].split(':')[1]);
+    }
+    let ave = sum / 4;
+    studentInfo[studentInfo.length-1].grades.set("average",ave);
+    studentInfo[studentInfo.length-1].grades.set("summary",sum);
+}
+
+function judgeForm(input){
+    let suspendStudentInfo = input.split(",");
+    // let grades = [4];
+    // let judgeform = 1;
+    // for(let i=4;i<8;i++){
+    //     grades[i-4] = suspendStudentInfo[i].split('：');
+    //     if(grades[i-4].)
+    // }
+    let judgeform　= (suspendStudentInfo.length===8);
+    return  {
+        judgeform,
+        suspendStudentInfo
+    }
+}
+function addStudentAchievement(input){
+    let judgeform = judgeForm(input).judgeform;
+    let suspendStudentInfo = judgeForm(input).suspendStudentInfo;
+    let result;
+    if(judgeform === true){
+        console.log(buildStudentInfoPromptString(suspendStudentInfo).rightform);
+        addStudentInfo(suspendStudentInfo);
+    }else{
+        let ins = readlineSync.question(buildStudentInfoPromptString(suspendStudentInfo).wrongform);
+        addStudentAchievement(ins);
+    }
+}
+
+
+//option2
+
+function generatorReport(idArray){
+    let strings = buildString(idArray);
+    let str = `成绩单
+姓名|数学|语文|英语|编程|平均分|总分 
+========================
+${strings}========================
+全班总分平均数：${calculateAM().ave}
+全班总分中位数：${calculateAM().mid}`;
+    return str;
+}
+
+
+function buildString(idArray){
+    let str = ``;
+    let indexArray = idArray.map(id=>studentInfo.map(item=>item.studentNumber).indexOf(id));
+    for(let index of indexArray){
+        if(index === -1){
+            continue;
+        }
+        str += `${studentInfo[index].name}|${studentInfo[index].grades.get("math")}|${studentInfo[index].grades.get("chinese")}|${studentInfo[index].grades.get("english")}|${studentInfo[index].grades.get("programming")}|${studentInfo[index].grades.get("average")}|${studentInfo[index].grades.get("summary")}\n`;
+    }
+    return str;
+}
+
+function calculateAM(){
+    let sumArray = studentInfo.map(item=>item.grades.get("summary"));
+    sumArray.sort(function(a,b){
+        return a-b;
+    });
+    let ave = 0,mid;
+    for(let i of sumArray){
+        ave += i;
+    }
+    ave /= sumArray.length;
+    if(sumArray.length%2===0){
+        mid = sumArray[sumArray.length/2]+sumArray[sumArray.length/2-1];
+        mid /= 2;
+    }else{
+        mid = sumArray[(sumArray.length-1)/2];
+    }
+
+    return {
+        ave,
+        mid
+    };
+}
+
+function printReport(ids){
+    let idArray = ids.split(',');
+    let judge = 1;
+    for(let i of idArray){
+        if(parseInt(i)===NaN){
+            judge = 0;
+            break;
+        }
+    }
+    if(judge === 1){
+        console.log(generatorReport(idArray));
+    }else{
+        let ins = readlineSync.question(`请按正确的格式输入要打印的学生的学号（格式： 学号, 学号,...），按回车提交：`);
+        printReport(ins);
+    }
+}
+
+
+
+function main(){
+    OUT:
+    while(true){
+        let flag = 1;
+        let option = readlineSync.question(buildMainMenuString());
+        switch (option){
+            case '1':
+                let student = readlineSync.question(`请输入学生信息（格式：姓名, 学号, 民族, 班级, 学科: 成绩, ...），按回车提交：`);
+                addStudentAchievement(student);
+                break;
+            case '2':
+                let ids = readlineSync.question(`请输入要打印的学生的学号（格式： 学号, 学号,...），按回车提交：`);
+                printReport(ids);
+                break;
+            case '3':
+                break OUT;
+        }
+    }
+}
+
+
+main();
+
+module.exports = {
+    buildMainMenuString,
+    addStudentInfo,
+    addStudentAchievement,
+    generatorReport,
+    buildString,
+    calculateAM,
+    printReport
+};
+
